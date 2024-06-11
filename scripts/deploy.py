@@ -194,6 +194,12 @@ def main():
             }
             if "lido_satellite_contract_address" in venue:
                 swap_adapter_instantiate_args["lido_satellite_contract_address"] = venue["lido_satellite_contract_address"]
+            if "hallswap_contract_address" in venue:
+                swap_adapter_instantiate_args["hallswap_contract_address"] = venue["hallswap_contract_address"]
+            if "dexter_vault_contract_address" in venue:
+                swap_adapter_instantiate_args["dexter_vault_contract_address"] = venue["dexter_vault_contract_address"]
+            if "dexter_router_contract_address" in venue:
+                swap_adapter_instantiate_args["dexter_router_contract_address"] = venue["dexter_router_contract_address"]
             
             swap_adapter_contract_address = instantiate_contract(
                 client, 
@@ -303,12 +309,16 @@ def main():
                 f"swap_adapter_{venue['name']}", 
                 PERMISSIONED_UPLOADER_ADDRESS
             )
+            args = {"entry_point_contract_address": entry_point_contract_address}
+            if "hallswap_contract_address" in venue:
+                args["hallswap_contract_address"] = venue["hallswap_contract_address"]
+                
             swap_adapter_contract_address = migrate_contract(
                 client, 
                 wallet, 
                 entry_point_instantiate_args["swap_venues"][i]["adapter_contract_address"],
                 swap_adapter_contract_code_id, 
-                {"entry_point_contract_address": entry_point_contract_address}, 
+                args, 
                 f"swap_adapter_{venue['name']}"
             )
             update_admin(
@@ -581,7 +591,12 @@ def broadcast_tx(tx) -> httpx.Response:
 
 
 def get_attribute_value(resp, event_type, attr_key):
-    for event in resp.json()['tx_response']['logs'][0]['events']:
+    if resp.json()['tx_response']['logs'] != []:
+        events = resp.json()['tx_response']['logs'][0]['events']
+    else:
+        events = resp.json()['tx_response']['events']
+        
+    for event in events:
         if event['type'] == event_type:
             for attr in event['attributes']:
                 if attr['key'] == attr_key:
